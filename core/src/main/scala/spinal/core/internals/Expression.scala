@@ -1400,6 +1400,12 @@ class MultiplexerEnum(var enumDef: SpinalEnum) extends Multiplexer with Inferabl
   override def swapEnum(e: SpinalEnum) = enumDef = e
 }
 
+/** Struct multiplexer */
+class MultiplexerStruct extends Multiplexer {
+  override def getTypeObject: Any = TypeStruct
+  override def opName: String     = "mux of Struct"
+}
+
 
 /**
   * Binary multiplexer
@@ -1489,6 +1495,12 @@ class BinaryMultiplexerEnum(var enumDef : SpinalEnum) extends BinaryMultiplexer 
   }
   override def getTypeObject: Any = TypeEnum
   override def swapEnum(e: SpinalEnum) = enumDef = e
+}
+
+/** Struct binary multiplexer */
+class BinaryMultiplexerStruct extends BinaryMultiplexer {
+  override def getTypeObject: Any = TypeStruct
+  override def opName: String = "Bool ? Struct | Struct"
 }
 
 

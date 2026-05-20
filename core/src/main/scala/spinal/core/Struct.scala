@@ -1,6 +1,6 @@
 package spinal.core
 
-import spinal.core.internals.{Suffixable, TypeStruct}
+import spinal.core.internals.{BinaryMultiplexer, BinaryMultiplexerStruct, Multiplexer, MultiplexerStruct, Suffixable, TypeStruct}
 import spinal.idslplugin.{Location, ValCallback}
 
 import scala.collection.mutable
@@ -181,6 +181,13 @@ abstract class SpinalStruct(val typeName: String = null) extends BaseType with N
     }
   }
 
+  private[core] def isEqualToSim(that: Any): Bool = {
+    that match {
+      case that: SpinalStruct => zippedMap(that, _ isEqualToSim _).reduce(_ && _)
+      case _               => SpinalError(s"Function isEqualToSim is not implemented between $this and $that")
+    }
+  }
+
   private[core] override def autoConnect(that: Data)(implicit loc: Location): Unit = {
     that match {
       case that: SpinalStruct => {
@@ -229,9 +236,9 @@ abstract class SpinalStruct(val typeName: String = null) extends BaseType with N
     ret.asInstanceOf[this.type]
   }
 
-  override private[core] def newMultiplexerExpression() = ???
+  override private[core] def newMultiplexerExpression(): Multiplexer = new MultiplexerStruct
 
-  override private[core] def newBinaryMultiplexerExpression() = ???
+  override private[core] def newBinaryMultiplexerExpression(): BinaryMultiplexer = new BinaryMultiplexerStruct
 
   /** Create a new instance of the same datatype without any configuration (width, direction) */
   override private[core] def weakClone = ???
