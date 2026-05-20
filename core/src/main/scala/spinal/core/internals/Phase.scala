@@ -45,6 +45,7 @@ class PhaseContext(val config: SpinalConfig) {
   val globalScope         = new NamingScope(duplicationPostfix)
   var topLevel: Component = null
   val enums               = mutable.LinkedHashMap[SpinalEnum,mutable.LinkedHashSet[SpinalEnumEncoding]]()
+  val structs             = mutable.LinkedHashSet[SpinalStruct]()
 
   val vhdlKeywords = Array(
     "abs", "access", "after", "alias", "all", "and", "architecture", "array", "assert",
@@ -1323,6 +1324,74 @@ class PhaseCollectAndNameEnum(pc: PhaseContext) extends PhaseMisc{
     enums.keys.foreach(e => {
       e.setName(scope.allocateName(e.getName()))
     })
+  }
+}
+
+class PhaseCollectAndNameStruct(pc: PhaseContext) extends PhaseMisc{
+
+  override def impl(pc : PhaseContext): Unit = {
+    import pc._
+
+    //Collect all SpinalStruct
+    walkDeclarations {
+      case struct: SpinalStruct => structs += struct
+      case _ =>
+    }
+
+    //Recursively collect nested structs from element types
+    def addNested(s: SpinalStruct): Unit = {
+      for ((_, e) <- s.elements) {
+        e match {
+          case nested: SpinalStruct =>
+            if (structs.add(nested)) addNested(nested)
+          case _ =>
+        }
+      }
+    }
+    structs.toList.foreach(addNested)
+
+    //Provide unique name for all structs
+    val scope = pc.globalScope.newChild("")
+    structs.foreach(s => {
+      if(s.typeName == null) {
+        val name = if(s.isNamed)
+          s.getName()
+        else
+          s.getClass.getSimpleName.replace("$","")
+        s.setName(scope.allocateName(name))
+      }
+    })
+
+    //Deduplicate by type string
+    val deduped = mutable.LinkedHashSet[SpinalStruct]()
+    val seen = mutable.LinkedHashSet[String]()
+    structs.foreach(s => if(seen.add(s.getTypeString)) deduped += s)
+
+    //Topological sort: structs without dependencies come first
+    def deps(s: SpinalStruct): Set[String] = s.elements.collect {
+      case (_, nested: SpinalStruct) => nested.getTypeString
+    }.toSet
+
+    val sorted = mutable.LinkedHashSet[SpinalStruct]()
+    val remaining = deduped.to[mutable.ArrayBuffer]
+    var changed = true
+    while(remaining.nonEmpty && changed) {
+      changed = false
+      val satisfied = mutable.ArrayBuffer[SpinalStruct]()
+      for(s <- remaining) {
+        val dep = deps(s)
+        val emittedTypes = sorted.map(_.getTypeString)
+        if(dep.subsetOf(emittedTypes)) {
+          sorted += s
+          satisfied += s
+          changed = true
+        }
+      }
+      remaining --= satisfied
+    }
+
+    structs.clear()
+    structs ++= sorted
   }
 }
 
@@ -3350,6 +3419,7 @@ object SpinalVhdlBoot{
 
     phases += new PhaseNameNodesByReflection(pc)
     phases += new PhaseCollectAndNameEnum(pc)
+    phases += new PhaseCollectAndNameStruct(pc)
 
     phases += new PhaseCheckIoBundle()
     phases += new PhaseCheckHierarchy()
@@ -3477,6 +3547,7 @@ object SpinalVerilogBoot{
 
     phases += new PhaseNameNodesByReflection(pc)
     phases += new PhaseCollectAndNameEnum(pc)
+    phases += new PhaseCollectAndNameStruct(pc)
 
     phases += new PhaseCheckIoBundle()
     phases += new PhaseCheckHierarchy()

@@ -36,6 +36,11 @@ class PhaseVerilog(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc 
 
   override def impl(pc: PhaseContext): Unit = {
 
+    if(!pc.config.isSystemVerilog && structs.nonEmpty) {
+      SpinalError(s"SpinalStruct is only supported in SystemVerilog mode. Use SpinalSystemVerilog instead of SpinalVerilog, or use Bundle instead of SpinalStruct.\n" +
+        s"Found ${structs.size} struct type(s): ${structs.map(_.getTypeString).mkString(", ")}")
+    }
+
     report.toplevelName = pc.topLevel.definitionName
     if (!pc.config.oneFilePerComponent) {
       report.generatedSourcesPaths += targetPath
@@ -45,6 +50,8 @@ class PhaseVerilog(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc 
       if(pc.config.withTimescale) outFile.write("`timescale 1ns/1ps")
 
       emitEnumPackage(outFile)
+
+      emitStructPackage(outFile)
 
       if(!svInterface.isEmpty) {
         outFile.write("\n")
@@ -90,6 +97,16 @@ class PhaseVerilog(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc 
         defineFile.flush()
         defineFile.close()
         fileList += defineFileName
+      }
+
+      // dump Struct typedef to structdefine.sv instead attach that on every .sv file
+      if(structs.nonEmpty){
+        val structFileName = pc.config.targetDirectory + "/structdefine.sv"
+        val structFile = new java.io.FileWriter(structFileName)
+        emitStructPackage(structFile)
+        structFile.flush()
+        structFile.close()
+        fileList += structFileName
       }
 
       // dump Interface define to (interface.definitionName).v
@@ -234,6 +251,28 @@ class PhaseVerilog(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc 
       val str    = encoding.getValue(senum).toString(2)
       val length = encoding.getWidth(senum.spinalEnum)
       length.toString + "'b" + ("0" * (length - str.length)) + str
+    }
+
+    out.write(ret.result())
+  }
+
+def emitStructPackage(out: java.io.FileWriter): Unit = {
+    val ret = new StringBuilder()
+
+    ret ++= "\n"
+    for (struct <- structs) {
+      val typeName = struct.getTypeString
+      ret ++= s"typedef struct packed {\n"
+      for ((name, e) <- struct.elements) {
+        e match {
+          case b: Bool      => ret ++= s"  logic ${name};\n"
+          case bv: BitVector => ret ++= s"  logic [${bv.getWidth - 1}:0] ${name};\n"
+          case se: SpinalEnumCraft[_] => ret ++= s"  logic [${se.getBitsWidth - 1}:0] ${name};\n"
+          case nested: SpinalStruct => ret ++= s"  ${nested.getTypeString} ${name};\n"
+          case _ => SpinalError(s"Unsupported element type in struct: ${e.getClass} for element ${name}")
+        }
+      }
+      ret ++= s"} ${typeName};\n\n"
     }
 
     out.write(ret.result())
