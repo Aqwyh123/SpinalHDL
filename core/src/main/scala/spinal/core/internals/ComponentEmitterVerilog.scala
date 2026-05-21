@@ -102,16 +102,11 @@ class ComponentEmitterVerilog(
           portMaps += f"${intMod}%-20s ${rootIF.getName()}${EDAcomment}${comma}"
         }
       } else {
-        baseType match {
-          case _: SpinalStruct =>
-            portMaps += f"${syntax}${dir}%6s ${section}%-8s ${name}${EDAcomment}${comma}"
-          case _ =>
-            if(outputsToBufferize.contains(baseType) || baseType.isInput){
-              portMaps += f"${syntax}${dir}%6s wire ${section}%-8s ${name}${EDAcomment}${comma}"
-            } else {
-              val isReg   = if(signalNeedProcess(baseType)) "reg" else "wire"
-              portMaps += f"${syntax}${dir}%6s ${isReg}%-4s ${section}%-8s ${name}${EDAcomment}${comma}"
-            }
+        if(outputsToBufferize.contains(baseType) || baseType.isInput){
+          portMaps += f"${syntax}${dir}%6s wire ${section}%-8s ${name}${EDAcomment}${comma}"
+        } else {
+          val isReg   = if(signalNeedProcess(baseType)) "reg" else "wire"
+          portMaps += f"${syntax}${dir}%6s ${isReg}%-4s ${section}%-8s ${name}${EDAcomment}${comma}"
         }
       }
     }
@@ -1079,16 +1074,10 @@ class ComponentEmitterVerilog(
 
   def emitBaseTypeSignal(baseType: BaseType, name: String): String = {
     val syntax  = s"${emitSyntaxAttributes(baseType.instanceAttributes)}"
+    val net     = (if(signalNeedProcess(baseType)) "reg" else "wire") + emitCommentEarlyAttributes(baseType.instanceAttributes)
     val comment = s"${emitCommentAttributes(baseType.instanceAttributes)}"
-    baseType match {
-      case _: SpinalStruct =>
-        val section = emitType(baseType)
-        s"${theme.maintab}${syntax}${expressionAlign("", section, name)}${comment};\n"
-      case _ =>
-        val net     = (if(signalNeedProcess(baseType)) "reg" else "wire") + emitCommentEarlyAttributes(baseType.instanceAttributes)
-        val section = emitType(baseType)
-        s"${theme.maintab}${syntax}${expressionAlign(net, section, name)}${comment};\n"
-    }
+    val section = emitType(baseType)
+    s"${theme.maintab}${syntax}${expressionAlign(net, section, name)}${comment};\n"
   }
 
   def emitInterfaceSignal(data: Interface, name: String): String = {
