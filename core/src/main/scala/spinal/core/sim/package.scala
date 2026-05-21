@@ -355,6 +355,7 @@ package object sim {
       case bt: UInt               => bt.randomize()
       case bt: SInt               => bt.randomize()
       case bt: SpinalEnumCraft[_] => bt.randomize()
+      case bt: SpinalStruct       => bt.randomize()
     }
 
     def assignBigInt(value: BigInt): Unit = bt match{
@@ -364,6 +365,7 @@ package object sim {
         assert(value < bt.spinalEnum.elements.length)
         setBigInt(bt, value)
       }
+      case bt: SpinalStruct       => bt #= value
     }
 
     def toBigInt: BigInt = bt match{
@@ -372,6 +374,7 @@ package object sim {
       case bt: UInt               => bt.toBigInt
       case bt: SInt               => bt.toBigInt
       case bt: SpinalEnumCraft[_] => BigInt(bt.toEnum.position)
+      case bt: SpinalStruct       => bt.toBigInt
     }
 
     def toBytes: Array[Byte] = toBigInt.toBytes(bt.getBitsWidth)
@@ -735,6 +738,15 @@ package object sim {
     def getSim = bt.encoding.getElement(getBigInt(bt), bt.spinalEnum).asInstanceOf[SpinalEnumElement[T]]
 
     def toEnum = getSim
+  }
+
+  implicit class SimSpinalStructPimper(bt: SpinalStruct) extends SimEquiv {
+    type SimEquivT = BigInt
+
+    def randomize(): Unit = setBigInt(bt, BigInt(bt.getBitsWidth, simRandom))
+    def #=(value: BigInt) = setBigInt(bt, value)
+    def getSim: BigInt = getBigInt(bt)
+    def toBigInt: BigInt = getBigInt(bt)
   }
 
   /**

@@ -23,7 +23,7 @@ package spinal.core.sim
 import java.io.{File, PrintWriter}
 import org.apache.commons.io.FileUtils
 import spinal.core.internals.{BaseNode, DeclarationStatement, GraphUtils, PhaseCheck, PhaseContext, PhaseNetlist}
-import spinal.core.{BaseType, Bits, BlackBox, Bool, Component, GlobalData, InComponent, Mem, MemSymbolesMapping, MemSymbolesTag, SInt, ScopeProperty, SpinalConfig, SpinalEnumCraft, SpinalReport, SpinalTag, SpinalTagReady, TimeNumber, UInt, Verilator, noLatchCheck}
+import spinal.core.{BaseType, Bits, BlackBox, Bool, Component, GlobalData, InComponent, Mem, MemSymbolesMapping, MemSymbolesTag, SInt, ScopeProperty, SpinalConfig, SpinalEnumCraft, SpinalReport, SpinalStruct, SpinalTag, SpinalTagReady, TimeNumber, UInt, Verilator, noLatchCheck}
 import spinal.sim._
 
 import scala.collection.mutable
@@ -89,6 +89,7 @@ object SpinalVerilatorBackend {
         case bt: UInt               => new UIntDataType(bt.getBitsWidth)
         case bt: SInt               => new SIntDataType(bt.getBitsWidth)
         case bt: SpinalEnumCraft[_] => new BitsDataType(bt.getBitsWidth)
+        case bt: SpinalStruct       => new BitsDataType(bt.getBitsWidth)
         case mem: Mem[_] => new BitsDataType(mem.width).setMem()
       })
 
@@ -126,7 +127,7 @@ object SpinalVerilatorBackend {
       }
     }))
 
-    for(io <- rtl.toplevel.getAllIo){
+    for(io <- rtl.toplevel.getAllIo if !io.parent.isInstanceOf[SpinalStruct]){
       val bt = io
       val signal = new Signal(bt.getComponents().tail.map(_.getName()) :+ bt.getName(), bt match{
         case bt: Bool               => new BoolDataType
@@ -134,6 +135,7 @@ object SpinalVerilatorBackend {
         case bt: UInt               => new UIntDataType(bt.getBitsWidth)
         case bt: SInt               => new SIntDataType(bt.getBitsWidth)
         case bt: SpinalEnumCraft[_] => new BitsDataType(bt.getBitsWidth)
+        case bt: SpinalStruct       => new BitsDataType(bt.getBitsWidth)
       })
 
       bt.algoInt = signalId
@@ -390,6 +392,7 @@ object SpinalVpiBackend {
         case bt: UInt               => new UIntDataType(bt.getBitsWidth)
         case bt: SInt               => new SIntDataType(bt.getBitsWidth)
         case bt: SpinalEnumCraft[_] => new BitsDataType(bt.getBitsWidth)
+        case bt: SpinalStruct       => new BitsDataType(bt.getBitsWidth)
         case mem: Mem[_] => new BitsDataType(mem.width)
       })
 
@@ -427,7 +430,7 @@ object SpinalVpiBackend {
       }
     }))
 
-    for(io <- rtl.toplevel.getAllIo){
+    for(io <- rtl.toplevel.getAllIo if !io.parent.isInstanceOf[SpinalStruct]){
       val bt = io
       val signal = new Signal(config.rtl.toplevelName +: bt.getComponents().tail.map(_.getName()) :+ bt.getName(), bt match{
         case bt: Bool               => new BoolDataType
@@ -435,6 +438,7 @@ object SpinalVpiBackend {
         case bt: UInt               => new UIntDataType(bt.getBitsWidth)
         case bt: SInt               => new SIntDataType(bt.getBitsWidth)
         case bt: SpinalEnumCraft[_] => new BitsDataType(bt.getBitsWidth)
+        case bt: SpinalStruct       => new BitsDataType(bt.getBitsWidth)
       })
 
       bt.algoInt = signalId
@@ -486,7 +490,7 @@ object SpinalXSimBackend {
 
     val signalsCollector = ArrayBuffer[Signal]()
 
-    for(io <- rtl.toplevel.getAllIo){
+    for(io <- rtl.toplevel.getAllIo if !io.parent.isInstanceOf[SpinalStruct]){
       val bt = io
       val signal = new Signal(config.rtl.toplevelName +: bt.getComponents().tail.map(_.getName()) :+ bt.getName(), bt match{
         case bt: Bool               => new BoolDataType
@@ -494,6 +498,7 @@ object SpinalXSimBackend {
         case bt: UInt               => new UIntDataType(bt.getBitsWidth)
         case bt: SInt               => new SIntDataType(bt.getBitsWidth)
         case bt: SpinalEnumCraft[_] => new BitsDataType(bt.getBitsWidth)
+        case bt: SpinalStruct       => new BitsDataType(bt.getBitsWidth)
       })
 
       bt.algoInt = signalId

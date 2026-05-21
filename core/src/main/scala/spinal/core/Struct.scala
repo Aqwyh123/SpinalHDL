@@ -162,9 +162,9 @@ abstract class SpinalStruct(val typeName: String = null) extends BaseType with N
       case that: SpinalStruct =>
         if (!this.getClass.isAssignableFrom(that.getClass)) SpinalError("Structs must have the same final class to" +
           " be assigned. Either use assignByName or assignSomeByName at \n" + ScalaLocated.long)
-        super.assignFromImpl(that, target, kind)
-      case _ => throw new Exception("Undefined assignment")
+      case _ =>
     }
+    super.assignFromImpl(that, target, kind)
   }
 
   private[core] def isEqualTo(that: Any): Bool = {
