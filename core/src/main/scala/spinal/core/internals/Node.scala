@@ -233,6 +233,10 @@ trait Widthable extends WidthProvider{
 }
 
 
+trait StructTyped {
+  def getTypeString: String
+}
+
 trait EnumEncoded{
   def getEncoding: SpinalEnumEncoding
   def propagateEncoding = false

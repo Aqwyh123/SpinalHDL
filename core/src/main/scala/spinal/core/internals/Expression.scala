@@ -1401,9 +1401,10 @@ class MultiplexerEnum(var enumDef: SpinalEnum) extends Multiplexer with Inferabl
 }
 
 /** Struct multiplexer */
-class MultiplexerStruct extends Multiplexer {
+class MultiplexerStruct extends Multiplexer with StructTyped {
   override def getTypeObject: Any = TypeStruct
   override def opName: String     = "mux of Struct"
+  override def getTypeString: String = inputs.head.asInstanceOf[StructTyped].getTypeString
 }
 
 
@@ -1498,9 +1499,10 @@ class BinaryMultiplexerEnum(var enumDef : SpinalEnum) extends BinaryMultiplexer 
 }
 
 /** Struct binary multiplexer */
-class BinaryMultiplexerStruct extends BinaryMultiplexer {
+class BinaryMultiplexerStruct extends BinaryMultiplexer with StructTyped {
   override def getTypeObject: Any = TypeStruct
   override def opName: String = "Bool ? Struct | Struct"
+  override def getTypeString: String = whenTrue.asInstanceOf[StructTyped].getTypeString
 }
 
 
@@ -1857,11 +1859,12 @@ class SIntRangedAccessFloating extends BitVectorRangedAccessFloating {
 /**
   * SuffixExpression
   */
-class SuffixExpression extends Expression with ScalaLocated {
+class SuffixExpression extends Expression with ScalaLocated with StructTyped {
   var target: BaseType = null
 
   override def opName: String = "Prefix.Suffix"
   override def getTypeObject: Any = TypeStruct
+  override def getTypeString: String = target.asInstanceOf[StructTyped].getTypeString
   override def remapExpressions(func: Expression => Expression): Unit = {}
   override def foreachExpression(func: Expression => Unit): Unit = {}
 }

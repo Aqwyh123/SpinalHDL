@@ -51,11 +51,11 @@ trait VerilogBase extends VhdlVerilogBase{
 
   def emitExpressionWrap(e: Expression, name: String): String = {
 //    s"  wire ${emitType(e)} ${name};\n"
-    if (!e.isInstanceOf[SpinalStruct]) {
+    if (!e.isInstanceOf[StructTyped]) {
       val isReg = e.isInstanceOf[Multiplexer]
       theme.maintab + expressionAlign(if(isReg) "reg" else "wire", emitType(e), name) + ";\n"
     } else
-      theme.maintab + expressionAlign(e.asInstanceOf[SpinalStruct].getTypeString, "", name) + ";\n"
+      theme.maintab + expressionAlign(e.asInstanceOf[StructTyped].getTypeString, "", name) + ";\n"
   }
 
   def emitExpressionWrap(e: Expression, name: String, nature: String): String = {
@@ -144,7 +144,7 @@ trait VerilogBase extends VhdlVerilogBase{
     s"${globalPrefix}${spinalEnum.getName()}_${source.getName()}_to_${target.getName()}"
   }
 
-  def emitStructType(struct: SpinalStruct): String = {
+  def emitStructType(struct: StructTyped): String = {
     return struct.getTypeString
   }
 
@@ -156,7 +156,7 @@ trait VerilogBase extends VhdlVerilogBase{
     case `TypeEnum` => e match {
       case e : EnumEncoded => emitEnumType(e.getDefinition, e.getEncoding)
     }
-    case `TypeStruct` => emitStructType(e.asInstanceOf[SpinalStruct])
+    case `TypeStruct` => emitStructType(e.asInstanceOf[StructTyped])
   }
 
   def emitDirection(baseType: BaseType) = baseType.dir match {

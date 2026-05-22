@@ -78,7 +78,7 @@ trait VhdlBase extends VhdlVerilogBase{
       return senum.getName() + "_" + encoding.getName() + "_type"
   }
 
-  def emitStructType(struct: SpinalStruct): String = {
+  def emitStructType(struct: StructTyped): String = {
     return struct.getTypeString
   }
 
@@ -88,7 +88,7 @@ trait VhdlBase extends VhdlVerilogBase{
     case sint: SInt => s"signed${if (constrained) emitRange(sint) else ""}"
     case bits: Bits => s"std_logic_vector${if (constrained) emitRange(bits) else ""}"
     case senum: SpinalEnumCraft[_] => emitEnumType(senum)
-    case struct: SpinalStruct => emitStructType(struct)
+    case struct: StructTyped => emitStructType(struct)
   }
 
   def emitDirection(baseType: BaseType) = baseType.dir match {

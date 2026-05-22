@@ -1,6 +1,6 @@
 package spinal.core
 
-import spinal.core.internals.{BinaryMultiplexer, BinaryMultiplexerStruct, Multiplexer, MultiplexerStruct, Suffixable, TypeStruct}
+import spinal.core.internals.{BinaryMultiplexer, BinaryMultiplexerStruct, Multiplexer, MultiplexerStruct, StructTyped, Suffixable, TypeStruct}
 import spinal.idslplugin.{Location, ValCallback}
 
 import scala.collection.mutable
@@ -11,7 +11,7 @@ import scala.collection.Seq
  * Class representing Verilog Struct and VHDL Record data types.
  * @param typeName Underlying structure name to use if not the subclass name.
  */
-abstract class SpinalStruct(val typeName: String = null) extends BaseType with Nameable with ValCallbackRec with DataPrimitives[SpinalStruct] with Suffixable {
+abstract class SpinalStruct(val typeName: String = null) extends BaseType with Nameable with ValCallbackRec with DataPrimitives[SpinalStruct] with Suffixable with StructTyped {
 
   def elements: ArrayBuffer[(String, Data)] = elementsCache
 

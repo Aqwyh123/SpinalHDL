@@ -117,21 +117,14 @@ class ComponentEmitterVerilog(
   override def wrapSubInput(io: BaseType): Unit = {
     if (referencesOverrides.contains(io))
       return
-    var name: String = null
     if (!io.isSuffix) {
-      name = component.localNamingScope.allocateName(io.component.getName() + "_" +  io.getName())
+      val name = component.localNamingScope.allocateName(io.component.getName() + "_" +  io.getName())
       declarations ++= emitBaseTypeWrap(io, name)
+      referencesOverrides(io) = name
     } else {
       wrapSubInput(io.parent.asInstanceOf[BaseType])
-      var parentName: String = ""
-      referencesOverrides(io.parent) match {
-        case s: String => parentName = s
-        case n: Nameable => parentName = n.getNameElseThrow
-        case _ => throw new Exception(s"Could not determine name of ${io}")
-      }
-      name = parentName + "." + io.getPartialName()
+      referencesOverrides(io) = SuffixExpression(io)
     }
-    referencesOverrides(io) = name
   }
 
   def emitArchitecture(): Unit = {
@@ -1040,10 +1033,13 @@ class ComponentEmitterVerilog(
   val _referenceSet        = mutable.LinkedHashSet[String]()
 
   def emitReference(that: DeclarationStatement, sensitive: Boolean): String ={
+    if(that.isInstanceOf[BaseType] && that.asInstanceOf[BaseType].isSuffix && !referencesOverrides.contains(that))
+      referencesOverrides(that) = SuffixExpression(that.asInstanceOf[BaseType])
     val name = referencesOverrides.getOrElse(that, that.getNameElseThrow) match {
       case x : String               => x
       case x : DeclarationStatement => emitReference(x, false)
-      case x : Literal => emitExpression(x)
+      case x : Literal              => emitExpression(x)
+      case x : SuffixExpression     => emitReference(x.target.parent.asInstanceOf[BaseType], false) + "." + x.target.getPartialName()
     }
     if(sensitive) referenceSetAdd(name)
     name
@@ -1074,14 +1070,12 @@ class ComponentEmitterVerilog(
 
   def emitBaseTypeSignal(baseType: BaseType, name: String): String = {
     val syntax  = s"${emitSyntaxAttributes(baseType.instanceAttributes)}"
+    val net = (if(signalNeedProcess(baseType)) "reg" else "wire") + emitCommentEarlyAttributes(baseType.instanceAttributes)
     val comment = s"${emitCommentAttributes(baseType.instanceAttributes)}"
     val section = emitType(baseType)
     baseType match {
-      case _: SpinalStruct =>
-        s"${theme.maintab}${syntax}${expressionAlign(section, "", name)}${comment};\n"
-      case _ =>
-        val net = (if(signalNeedProcess(baseType)) "reg" else "wire") + emitCommentEarlyAttributes(baseType.instanceAttributes)
-        s"${theme.maintab}${syntax}${expressionAlign(net, section, name)}${comment};\n"
+      case struct: SpinalStruct => s"${theme.maintab}${syntax}${expressionAlign(section, "", name)}${comment};\n"
+      case _                    => s"${theme.maintab}${syntax}${expressionAlign(net, section, name)}${comment};\n"
     }
   }
 

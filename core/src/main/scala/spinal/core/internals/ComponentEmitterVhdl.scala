@@ -123,21 +123,14 @@ class ComponentEmitterVhdl(
   override def wrapSubInput(io: BaseType): Unit = {
     if (referencesOverrides.contains(io))
       return
-    var name: String = null
     if (!io.isSuffix) {
-      name = component.localNamingScope.allocateName(io.component.getName() + "_" +  io.getName())
+      val name = component.localNamingScope.allocateName(io.component.getName() + "_" +  io.getName())
       declarations ++= s"  signal $name : ${emitDataType(io)};\n"
+      referencesOverrides(io) = name
     } else {
       wrapSubInput(io.parent.asInstanceOf[BaseType])
-      var parentName: String = ""
-      referencesOverrides(io.parent) match {
-        case s: String => parentName = s
-        case n: Nameable => parentName = n.getNameElseThrow
-        case _ => throw new Exception(s"Could not determine name of ${io}")
-      }
-      name = parentName + "." + io.getPartialName()
+      referencesOverrides(io) = SuffixExpression(io)
     }
-    referencesOverrides(io) = name
   }
 
   def emitArchitecture(): Unit = {
@@ -948,10 +941,13 @@ class ComponentEmitterVhdl(
   val _referenceSet        = mutable.LinkedHashSet[String]()
 
   def emitReference(that: DeclarationStatement, sensitive: Boolean): String ={
+    if(that.isInstanceOf[BaseType] && that.asInstanceOf[BaseType].isSuffix && !referencesOverrides.contains(that))
+      referencesOverrides(that) = SuffixExpression(that.asInstanceOf[BaseType])
     val name = referencesOverrides.getOrElse(that, that.getNameElseThrow) match {
       case x: String               => x
       case x: DeclarationStatement => emitReference(x,false)
-      case x: Literal => emitExpression(x)
+      case x: Literal              => emitExpression(x)
+      case x: SuffixExpression     => emitReference(x.target.parent.asInstanceOf[BaseType], false) + "." + x.target.getPartialName()
     }
 
     if(sensitive) referenceSetAdd(name)
