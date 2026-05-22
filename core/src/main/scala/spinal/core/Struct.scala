@@ -192,7 +192,6 @@ abstract class SpinalStruct(val typeName: String = null) extends BaseType with N
     that match {
       case that: SpinalStruct => {
         this autoConnectBaseImpl that
-        zippedMap(that, _ autoConnect _)
       }
       case _               => SpinalError(s"Function autoConnect is not implemented between $this and $that")
     }
