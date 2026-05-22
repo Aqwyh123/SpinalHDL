@@ -358,15 +358,11 @@ class ComponentEmitterVerilog(
       if(openSubIo.contains(data)) ""
       else {
         val wireName = emitReference(data, false)
-        data match {
-          case _: SpinalStruct => wireName
-          case _ =>
-            val section = if(data.getBitsWidth == 1 || wireName.contains('\'')) "" else  s"[${data.getBitsWidth - 1}:0]"
-            referencesOverrides.getOrElse(data, data.getNameElseThrow) match {
-              case x: Literal => wireName
-              case _ =>  wireName + section
-            } //Section removed as it can be a literal
-        }
+        val section = if(data.isInstanceOf[SpinalStruct] || data.getBitsWidth == 1 || wireName.contains('\'')) "" else  s"[${data.getBitsWidth - 1}:0]"
+        referencesOverrides.getOrElse(data, data.getNameElseThrow) match {
+          case x: Literal => wireName
+          case _ =>  wireName + section
+        } //Section removed as it can be a literal
       }
     }
 
