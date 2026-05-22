@@ -3049,8 +3049,7 @@ class PhaseAllocateNames(pc: PhaseContext) extends PhaseMisc{
       ("^[^a-zA-Z_]".r, "doesn't start with a letter or underscore")
     )
     def checkName(namedObj: Nameable): Unit = {
-      val isStructElement = namedObj.refOwner != null && namedObj.refOwner.isInstanceOf[SpinalStruct]
-      var name = if (isStructElement) namedObj.getPartialName() else namedObj.getName()
+      var name = namedObj.getName()
       if (!name.startsWith(pc.globalData.anonymSignalPrefix)) {
         for ((regex, reason) <- invalidVhdlIdentifier) {
           if (regex.findFirstIn(name).exists(_ => true)) {
