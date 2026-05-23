@@ -26,6 +26,7 @@ import spinal.core._
 trait VhdlBase extends VhdlVerilogBase{
 
   var enumPackageName = "pkg_enum"
+  var structPackageName = "pkg_struct"
   var packageName     = "pkg_scala2hdl"
 
   def emitLibrary(ret: StringBuilder): Unit = {
@@ -36,7 +37,8 @@ trait VhdlBase extends VhdlVerilogBase{
     ret ++= s"library work;\n"
     ret ++= s"use work.$packageName.all;\n"
     ret ++= s"use work.all;\n"
-    ret ++= s"use work.$enumPackageName.all;\n\n"
+    ret ++= s"use work.$enumPackageName.all;\n"
+    ret ++= s"use work.$structPackageName.all;\n\n"
   }
 
   def emitClockEdge(clock: String, edgeKind: EdgeKind): String = {
@@ -56,6 +58,7 @@ trait VhdlBase extends VhdlVerilogBase{
     case `TypeEnum` => e match {
       case e : EnumEncoded => emitEnumType(e.getDefinition, e.getEncoding)
     }
+    case `TypeStruct` => emitStructType(e.asInstanceOf[StructTyped])
   }
 
   def getReEncodingFuntion(spinalEnum: SpinalEnum, source: SpinalEnumEncoding, target: SpinalEnumEncoding): String = {

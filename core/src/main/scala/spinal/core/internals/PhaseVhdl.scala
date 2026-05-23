@@ -34,6 +34,7 @@ class PhaseVhdl(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc wit
   override def impl(pc: PhaseContext): Unit = {
     packageName     = pc.privateNamespaceName + packageName
     enumPackageName = pc.privateNamespaceName + enumPackageName
+    structPackageName = pc.privateNamespaceName + structPackageName
     report.toplevelName = pc.topLevel.definitionName
     var targetFilePath = ""
 
@@ -45,6 +46,16 @@ class PhaseVhdl(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc wit
       outFile = new java.io.FileWriter(targetFilePath)
       outFile.write(VhdlVerilogBase.getHeader("--", pc.config.rtlHeader, topLevel, config.headerWithDate, config.headerWithRepoHash))
       emitEnumPackage(outFile)
+      outFile.flush()
+      outFile.close()
+      report.generatedSourcesPaths += targetFilePath
+      fileList += targetFilePath
+
+      // Emit structs
+      targetFilePath = pc.config.targetDirectory + "/" + "pkg_struct.vhd"
+      outFile = new java.io.FileWriter(targetFilePath)
+      outFile.write(VhdlVerilogBase.getHeader("--", pc.config.rtlHeader, topLevel, config.headerWithDate, config.headerWithRepoHash))
+      emitStructPackage(outFile)
       outFile.flush()
       outFile.close()
       report.generatedSourcesPaths += targetFilePath
@@ -115,6 +126,7 @@ class PhaseVhdl(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc wit
       outFile = new java.io.FileWriter(targetFilePath)
       outFile.write(VhdlVerilogBase.getHeader("--", pc.config.rtlHeader, topLevel, config.headerWithDate, config.headerWithRepoHash))
       emitEnumPackage(outFile)
+      emitStructPackage(outFile)
 
       if(pc.config.genVhdlPkg)
         emitPackage(outFile)
@@ -301,6 +313,41 @@ class PhaseVhdl(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc wit
       }
       ret ++= s"end $enumPackageName;\n\n\n"
     }
+    out.write(ret.result())
+  }
+
+  def emitStructPackage(out: java.io.FileWriter): Unit = {
+    val ret = new StringBuilder()
+    ret ++=
+      s"""library IEEE;
+         |use IEEE.STD_LOGIC_1164.ALL;
+         |
+         |package $structPackageName is
+         |""".stripMargin
+
+    for (struct <- structs) {
+      val typeName = struct.getTypeString
+      ret ++= s"  type $typeName is record\n"
+      for ((name, e) <- struct.elements) {
+        val vhdlType = e match {
+          case b: Bool                => "std_logic"
+          case bv: BitVector          => s"std_logic_vector(${bv.getWidth - 1} downto 0)"
+          case se: SpinalEnumCraft[_] => s"${emitEnumType(se)}"
+          case nested: SpinalStruct   => nested.getTypeString
+          case _ => SpinalError(s"Unsupported element type in struct: ${e.getClass} for element $name")
+        }
+        ret ++= s"    $name : $vhdlType;\n"
+      }
+      ret ++= s"  end record;\n\n"
+    }
+
+    ret ++= s"end $structPackageName;\n\n"
+
+    if (structs.nonEmpty) {
+      ret ++= s"package body $structPackageName is\n"
+      ret ++= s"end $structPackageName;\n\n"
+    }
+
     out.write(ret.result())
   }
 

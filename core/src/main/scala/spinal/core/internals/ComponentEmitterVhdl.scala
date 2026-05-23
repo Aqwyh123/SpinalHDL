@@ -370,7 +370,7 @@ class ComponentEmitterVhdl(
       logics ++= s"    port map ( \n"
 
       for (data <- children.getOrdredNodeIo) {
-        if (!data.isInstanceOf[SpinalStruct]) {
+        if (!data.isSuffix) {
           val logic = if(openSubIo.contains(data)) "open" else emitReference(data, false)
           if(data.isInOut){
             val buf = new mutable.StringBuilder()
@@ -903,11 +903,7 @@ class ComponentEmitterVhdl(
   def emitAssignment(assignment: AssignmentStatement, tab: String, assignmentKind: String): String = {
     assignment match {
       case r if r.source.isInstanceOf[Operator.Formal.RandomExp] => "" // handled via attributes
-      case _ =>
-        if (!assignment.target.isInstanceOf[SpinalStruct])
-          s"$tab${emitAssignedExpression(assignment.target)} ${assignmentKind} ${emitExpression(assignment.source)};${emitLocation(assignment)}\n"
-        else
-          ""
+      case _ => s"$tab${emitAssignedExpression(assignment.target)} ${assignmentKind} ${emitExpression(assignment.source)};${emitLocation(assignment)}\n"
     }
   }
 

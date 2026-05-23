@@ -36,11 +36,6 @@ class PhaseVerilog(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc 
 
   override def impl(pc: PhaseContext): Unit = {
 
-    if(!pc.config.isSystemVerilog && structs.nonEmpty) {
-      SpinalError(s"SpinalStruct is only supported in SystemVerilog mode. Use SpinalSystemVerilog instead of SpinalVerilog, or use Bundle instead of SpinalStruct.\n" +
-        s"Found ${structs.size} struct type(s): ${structs.map(_.getTypeString).mkString(", ")}")
-    }
-
     report.toplevelName = pc.topLevel.definitionName
     if (!pc.config.oneFilePerComponent) {
       report.generatedSourcesPaths += targetPath
