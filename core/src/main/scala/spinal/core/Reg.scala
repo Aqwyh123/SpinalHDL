@@ -35,9 +35,7 @@ object Reg {
   def apply[T <: Data](dataType: HardType[T], init: T = null.asInstanceOf[T], next : T = null.asInstanceOf[T]): T = {
     val regOut = cloneOf(dataType)
 
-    for ( e <- regOut.flatten) {
-      e.setAsReg()
-    }
+    regOut.setAsReg()
 
     if (init != null) regOut.init(init)
     if (next != null) regOut := next

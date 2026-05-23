@@ -105,7 +105,10 @@ class ComponentEmitterVerilog(
         if(outputsToBufferize.contains(baseType) || baseType.isInput){
           portMaps += f"${syntax}${dir}%6s wire ${section}%-8s ${name}${EDAcomment}${comma}"
         } else {
-          val isReg   = if(signalNeedProcess(baseType)) "reg" else "wire"
+          val isReg   = baseType match {
+            case _: SpinalStruct => if(signalNeedProcess(baseType)) "var" else "wire"
+            case _ => if(signalNeedProcess(baseType)) "reg" else "wire"
+          }
           portMaps += f"${syntax}${dir}%6s ${isReg}%-4s ${section}%-8s ${name}${EDAcomment}${comma}"
         }
       }
@@ -1067,10 +1070,11 @@ class ComponentEmitterVerilog(
   def emitBaseTypeSignal(baseType: BaseType, name: String): String = {
     val syntax  = s"${emitSyntaxAttributes(baseType.instanceAttributes)}"
     val net     = (if(signalNeedProcess(baseType)) "reg" else "wire") + emitCommentEarlyAttributes(baseType.instanceAttributes)
+    val variable = (if(signalNeedProcess(baseType)) "var" else "wire") + emitCommentEarlyAttributes(baseType.instanceAttributes)
     val comment = s"${emitCommentAttributes(baseType.instanceAttributes)}"
     val section = emitType(baseType)
     baseType match {
-      case struct: SpinalStruct => s"${theme.maintab}${syntax}${expressionAlign(section, "", name)}${comment};\n"
+      case struct: SpinalStruct => s"${theme.maintab}${syntax}${expressionAlign(variable, section, name)}${comment};\n"
       case _                    => s"${theme.maintab}${syntax}${expressionAlign(net, section, name)}${comment};\n"
     }
   }
@@ -1106,9 +1110,10 @@ class ComponentEmitterVerilog(
 
   def emitBaseTypeWrap(baseType: BaseType, name: String): String = {
     val net = if(signalNeedProcess(baseType)) "reg" else "wire"
+    val variable = if(signalNeedProcess(baseType)) "var" else "wire"
     val section = emitType(baseType)
     baseType match {
-      case struct: SpinalStruct => s"${theme.maintab}${expressionAlign(section, "", name)};\n"
+      case struct: SpinalStruct => s"${theme.maintab}${expressionAlign(variable, section, name)};\n"
       case _                    => s"${theme.maintab}${expressionAlign(net, section, name)};\n"
     }
   }

@@ -61,6 +61,12 @@ abstract class SpinalStruct(val typeName: String = null) extends BaseType with N
     this
   }
 
+  override def setAsAnalog(): this.type = {
+    super.setAsAnalog()
+    elements.foreach(_._2.setAsAnalog())
+    this
+  }
+
   override def freeze(): this.type = {
     elements.foreach(_._2.freeze())
     this
