@@ -251,7 +251,7 @@ class PhaseVerilog(pc: PhaseContext, report: SpinalReport[_]) extends PhaseMisc 
     out.write(ret.result())
   }
 
-def emitStructPackage(out: java.io.FileWriter): Unit = {
+  def emitStructPackage(out: java.io.FileWriter): Unit = {
     val ret = new StringBuilder()
 
     ret ++= "\n"
@@ -260,10 +260,10 @@ def emitStructPackage(out: java.io.FileWriter): Unit = {
       ret ++= s"typedef struct packed {\n"
       for ((name, e) <- struct.elements) {
         e match {
-          case b: Bool      => ret ++= s"  logic ${name};\n"
-          case bv: BitVector => ret ++= s"  logic [${bv.getWidth - 1}:0] ${name};\n"
-          case se: SpinalEnumCraft[_] => ret ++= s"  logic [${se.getBitsWidth - 1}:0] ${name};\n"
-          case nested: SpinalStruct => ret ++= s"  ${nested.getTypeString} ${name};\n"
+          case b: Bool      => ret ++= s"  var logic ${name};\n"
+          case bv: BitVector => ret ++= s"  var logic [${bv.getWidth - 1}:0] ${name};\n"
+          case se: SpinalEnumCraft[_] => ret ++= s"  var logic [${se.getBitsWidth - 1}:0] ${name};\n"
+          case ss: SpinalStruct => ret ++= s"  var ${ss.getTypeString} ${name};\n"
           case _ => SpinalError(s"Unsupported element type in struct: ${e.getClass} for element ${name}")
         }
       }
