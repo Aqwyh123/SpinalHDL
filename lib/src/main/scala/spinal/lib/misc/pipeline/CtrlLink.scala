@@ -29,6 +29,10 @@ trait CtrlApi {
 
   def isValid = up.isValid
   def isReady = down.isReady
+  def isCancel: Bool = up.isCancel
+  def isFiring: Bool = up.isFiring
+  def isMoving: Bool = up.isMoving
+  def isCanceling: Bool = up.isCanceling
 
   /** Same as `Link.down(Payload)` */
   def apply[T <: Data](that: Payload[T]): T = down(that, defaultKey)
